@@ -1,3 +1,5 @@
+#20240613
+#by Gori
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -38,8 +40,8 @@ scaled_width = int(image_width * scale_factor)
 scaled_height = int(image_height * scale_factor)
 cmap = 'jet'  # カラーマップの種類を指定
 
-dat_path = 'map.dat'  # datファイルのパスを指定
-csv_path = 'output.csv'  # ピーク位置のCSVファイルのパスを指定
+dat_path = 'testdata/map.dat'  # datファイルのパスを指定
+csv_path = 'testdata/output.csv'  # ピーク位置のCSVファイルのパスを指定
 
 # 画像とピークの推定位置を読み込む
 image = load_dat_image(dat_path, image_width, image_height, cmap)

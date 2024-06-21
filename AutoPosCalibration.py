@@ -1,3 +1,5 @@
+#20240619
+#by Gori
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
@@ -5,9 +7,19 @@ from skimage.feature import peak_local_max
 import math
 
 N_pix = 45
+input_file_path = 'testdata/map_45.npy'
+output_file_path = 'testdata/output.csv'
+
+def coordinate_norm(value, min, original_size):
+    value /= original_size / 2
+    value += min
+
+    return value
 
 # データを読み込む
-map_data = np.load('map_45.npy')
+map_data = np.load(input_file_path).T
+map_size_rows, map_size_cols = map_data.shape
+print(map_size_cols)
 
 # ガウシアンフィルタを適用して平滑化
 smoothed_data = gaussian_filter(map_data, sigma=1)
@@ -43,13 +55,19 @@ distances = np.linalg.norm(filtered_peaks - center_point, axis=1)
 center_index = np.argmin(distances)
 center_peak = filtered_peaks[center_index]
 
+# ピークID格納変数の初期化
+initial_pos = np.full(2, -1)
+peak_ids = np.full((N_pix, N_pix, 2), initial_pos)
+# for i in range(N_pix):
+#     for j in range(N_pix):
+#         peak_ids[i][j].append(initial_pos)
+
 # ピークにIDを割り当てる
-peak_ids = {}
 if (N_pix % 2 == 0):
     center_id = (N_pix/2, N_pix/2)
 else:
     center_id = ((N_pix-1)/2, (N_pix-1)/2)
-peak_ids[tuple(center_peak)] = center_id
+peak_ids[int(center_id[0])][int(center_id[1])] = center_peak
 
 def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=12, max_count=15, search_range=15, offset=5):
     current_id = start_id
@@ -119,10 +137,10 @@ def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=12, 
         if not (0 <= new_id[0] <= (N_pix - 1) and 0 <= new_id[1] <= (N_pix - 1)):
             break
 
-        if new_id in peak_ids:
+        if peak_ids[int(new_id[0])][int(new_id[1])][0] != -1:
             break
 
-        peak_ids[tuple(next_peak)] = new_id
+        peak_ids[int(new_id[0])][int(new_id[1])] = next_peak
         current_id = new_id
         current_peak = next_peak
 
@@ -135,25 +153,39 @@ assign_id_in_direction(filtered_peaks, center_id, center_peak, 'right')
 
 # 上下左右の各ピークに対して同様に探索を繰り返す
 for direction in ['up', 'down']:
-    for current_peak, current_id in list(peak_ids.items()):
-        if (N_pix % 2 == 0):
-            if (current_id[1] == N_pix/2):
-                assign_id_in_direction(filtered_peaks, current_id, np.array(current_peak), direction)
-        else:
-            if (current_id[1] == (N_pix-1)/2):
-                assign_id_in_direction(filtered_peaks, current_id, np.array(current_peak), direction)
+    for i, a in enumerate(peak_ids):
+        for j, current_peak in enumerate(a):
+            current_id = [i, j]
+            if (N_pix % 2 == 0):
+                if (j == N_pix/2):
+                    assign_id_in_direction(filtered_peaks, current_id, np.array(current_peak), direction)
+            else:
+                if (j == (N_pix-1)/2):
+                    assign_id_in_direction(filtered_peaks, current_id, np.array(current_peak), direction)
 
 # IDを割り当てたピークを表示
 plt.figure()
 plt.imshow(map_data, cmap='viridis', origin='lower')
-for (y, x), (id_x, id_y) in peak_ids.items():
-    plt.plot(x, y, 'r,', markersize=10)
-    plt.text(x, y, f'({id_x},{id_y})', color='white', fontsize=8, ha='center')
+for i, a in enumerate(peak_ids):
+    for j, pos in enumerate(a):
+        plt.plot(pos[1], pos[0], 'r,', markersize=10)
+        plt.text(pos[1], pos[0], f'({i},{j})', color='white', fontsize=8, ha='center')
 plt.title('Detected Peaks with IDs')
 plt.colorbar(label='Intensity')
 plt.show()
 
 # CSVに出力する
-# for peak_pos, peak_id in list(peak_ids.items()):
+miss_count = 0
+with open(output_file_path, "w") as f:
+    for i, a in enumerate(peak_ids):
+        for j, pos in enumerate(a):
+            if (i == 0 and j == 0):
+                f.write("IDx,IDy,Posix,Posiy,accuracy\n")
+            if (pos[0] == -1):
+                f.write(f'{int(i)},{int(j)},{pos[1]},{pos[0]},miss\n')
+                miss_count += 1
+            else:
+                f.write(f'{int(i)},{int(j)},{coordinate_norm(pos[1], -1, map_size_cols)},{coordinate_norm(pos[0], -1, map_size_cols)},\n')
 
+print(miss_count)
 peak_ids

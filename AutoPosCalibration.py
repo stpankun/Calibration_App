@@ -6,9 +6,9 @@ from scipy.ndimage import gaussian_filter
 from skimage.feature import peak_local_max
 import math
 
-N_pix = 45
-input_file_path = 'testdata/map_45.npy'
-output_file_path = 'testdata/output.csv'
+N_pix = 23
+input_file_path = 'testdata/map3.npy'
+output_file_path = 'testdata/output3.csv'
 
 def coordinate_norm(value, min, original_size):
     value /= original_size / 2
@@ -25,17 +25,17 @@ print(map_size_cols)
 smoothed_data = gaussian_filter(map_data, sigma=1)
 
 # ピークを検出
-initial_peaks = peak_local_max(smoothed_data, min_distance=7, threshold_abs=np.mean(smoothed_data))
+initial_peaks = peak_local_max(smoothed_data, min_distance=7, threshold_abs=np.mean(smoothed_data)*1.5)
 
-# 格子パターンの検証
-lattice_spacing = 5  # 予想される格子間隔
+# 格子パターンの検証(不要であるため事実上削除)
+# lattice_spacing = 5  # 予想される格子間隔
 filtered_peaks = []
 
 for peak in initial_peaks:
     y, x = peak
-    if (y % lattice_spacing < 5 or y % lattice_spacing > lattice_spacing - 5) and \
-       (x % lattice_spacing < 5 or x % lattice_spacing > lattice_spacing - 5):
-        filtered_peaks.append(peak)
+    # if (y % lattice_spacing < 5 or y % lattice_spacing > lattice_spacing - 5) and \
+    #    (x % lattice_spacing < 5 or x % lattice_spacing > lattice_spacing - 5):
+    filtered_peaks.append(peak)
 
 filtered_peaks = np.array(filtered_peaks)
 

@@ -33,15 +33,17 @@ def denormalize_coordinates(norm_x, norm_y, width, height):
     return x, y
 
 # 画像サイズとファイルパスを定義
-image_width = 500 # bin数(基本は1000)
-image_height = 500
+image_width = 1000 # bin数(基本は1000)
+image_height = 1000
 scale_factor = 0.5  # 画像をスケーリングする割合
 scaled_width = int(image_width * scale_factor)
 scaled_height = int(image_height * scale_factor)
 cmap = 'jet'  # カラーマップの種類を指定
 
-dat_path = 'testdata/map3.dat'  # datファイルのパスを指定
-csv_path = 'testdata/output3.csv'  # ピーク位置のCSVファイルのパスを指定
+dat_path = 'testdata/output/map.dat'  # datファイルのパスを指定
+csv_path = 'testdata/output/output.csv'  # ピーク位置のCSVファイルのパスを指定
+# out_path = 'testdata/output/adjusted_peaks.csv'
+out_path = 'testdata/output/output.csv'
 
 # 画像とピークの推定位置を読み込む
 image = load_dat_image(dat_path, image_width, image_height, cmap)

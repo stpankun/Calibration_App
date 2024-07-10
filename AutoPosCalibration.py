@@ -6,9 +6,9 @@ from scipy.ndimage import gaussian_filter
 from skimage.feature import peak_local_max
 import math
 
-N_pix = 23
-input_file_path = 'testdata/map3.npy'
-output_file_path = 'testdata/output3.csv'
+N_pix = 45
+input_file_path = 'testdata/output/map.npy'
+output_file_path = 'testdata/output/output.csv'
 
 def coordinate_norm(value, min, original_size):
     value /= original_size / 2
@@ -19,13 +19,13 @@ def coordinate_norm(value, min, original_size):
 # データを読み込む
 map_data = np.load(input_file_path).T
 map_size_rows, map_size_cols = map_data.shape
-print(map_size_cols)
+print(f'Number of lines of input file : {map_size_cols}')
 
 # ガウシアンフィルタを適用して平滑化
 smoothed_data = gaussian_filter(map_data, sigma=1)
 
 # ピークを検出
-initial_peaks = peak_local_max(smoothed_data, min_distance=7, threshold_abs=np.mean(smoothed_data)*1.5)
+initial_peaks = peak_local_max(smoothed_data, min_distance=7, threshold_abs=np.mean(smoothed_data)*1.1)
 
 # 格子パターンの検証(不要であるため事実上削除)
 # lattice_spacing = 5  # 予想される格子間隔
@@ -69,7 +69,7 @@ else:
     center_id = ((N_pix-1)/2, (N_pix-1)/2)
 peak_ids[int(center_id[0])][int(center_id[1])] = center_peak
 
-def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=12, max_count=15, search_range=15, offset=5):
+def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=10, max_count=15, search_range=25, offset=5):
     current_id = start_id
     current_peak = start_peak
 

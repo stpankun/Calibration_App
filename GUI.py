@@ -41,9 +41,9 @@ scaled_height = int(image_height * scale_factor)
 cmap = 'jet'  # カラーマップの種類を指定
 
 dat_path = 'testdata/output/map.dat'  # datファイルのパスを指定
-csv_path = 'testdata/output/output.csv'  # ピーク位置のCSVファイルのパスを指定
-# out_path = 'testdata/output/adjusted_peaks.csv'
-out_path = 'testdata/output/output.csv'
+# csv_path = 'testdata/output/output.csv'  # ピーク位置のCSVファイルのパスを指定
+# csv_path = 'adjusted_peaks.csv'
+csv_path = 'testdata/output/output.csv'
 
 # 画像とピークの推定位置を読み込む
 image = load_dat_image(dat_path, image_width, image_height, cmap)

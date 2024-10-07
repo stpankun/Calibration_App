@@ -25,7 +25,7 @@ print(f'Number of lines of input file : {map_size_cols}')
 smoothed_data = gaussian_filter(map_data, sigma=1)
 
 # ピークを検出
-initial_peaks = peak_local_max(smoothed_data, min_distance=7, threshold_abs=np.mean(smoothed_data)*1.1)
+initial_peaks = peak_local_max(smoothed_data, min_distance=5, threshold_abs=np.mean(smoothed_data)*1.1)
 
 # 格子パターンの検証(不要であるため事実上削除)
 # lattice_spacing = 5  # 予想される格子間隔
@@ -33,8 +33,6 @@ filtered_peaks = []
 
 for peak in initial_peaks:
     y, x = peak
-    # if (y % lattice_spacing < 5 or y % lattice_spacing > lattice_spacing - 5) and \
-    #    (x % lattice_spacing < 5 or x % lattice_spacing > lattice_spacing - 5):
     filtered_peaks.append(peak)
 
 filtered_peaks = np.array(filtered_peaks)
@@ -58,9 +56,6 @@ center_peak = filtered_peaks[center_index]
 # ピークID格納変数の初期化
 initial_pos = np.full(2, -1)
 peak_ids = np.full((N_pix, N_pix, 2), initial_pos)
-# for i in range(N_pix):
-#     for j in range(N_pix):
-#         peak_ids[i][j].append(initial_pos)
 
 # ピークにIDを割り当てる
 if (N_pix % 2 == 0):
@@ -70,6 +65,7 @@ else:
 peak_ids[int(center_id[0])][int(center_id[1])] = center_peak
 
 def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=10, max_count=15, search_range=25, offset=5):
+    global filtered_peaks
     current_id = start_id
     current_peak = start_peak
 
@@ -82,7 +78,7 @@ def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=10, 
 
         # x方向の探索
         if direction == 'left':
-            print(current_id)
+            # print(current_id)
             next_peaks = [peak for peak in peaks if peak[1] < x - offset and abs(peak[0] - y) < search_range]
         elif direction == 'right':
             next_peaks = [peak for peak in peaks if peak[1] > x + offset and abs(peak[0] - y) < search_range]
@@ -114,7 +110,7 @@ def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=10, 
 
         # 次のピークが有効範囲内かどうかをチェック
         if direction in ['left', 'right']:
-            print(next_peak)
+            # print(next_peak)
             if abs(next_peak[0] - y) > max_dist:
                 print("Next peak is too far!!")
                 break
@@ -144,6 +140,12 @@ def assign_id_in_direction(peaks, start_id, start_peak, direction, max_dist=10, 
         current_id = new_id
         current_peak = next_peak
 
+        peaks = np.delete(peaks, np.where(np.all(peaks == next_peak, axis=1)), axis=0)
+
+        filtered_peaks = np.delete(filtered_peaks, np.where(np.all(filtered_peaks == next_peak, axis=1)), axis=0)
+    
+    # print(filtered_peaks.shape[0])
+
 # 各方向に対してIDを割り当てる
 print("left")
 assign_id_in_direction(filtered_peaks, center_id, center_peak, 'left')
@@ -163,6 +165,59 @@ for direction in ['up', 'down']:
                 if (j == (N_pix-1)/2):
                     assign_id_in_direction(filtered_peaks, current_id, np.array(current_peak), direction)
 
+# 既存のピークをもとにもう一度左右方向に探索
+for direction in ['left', 'right']:
+    if (N_pix % 2 == 0):
+        N_pix_harf = int(N_pix / 2)
+    else:
+        N_pix_harf = int((N_pix - 1) / 2)
+
+    for i in range(N_pix_harf - 1):
+        for j in range(N_pix):
+            if direction == 'left':
+                if j == N_pix_harf:
+                    continue
+                else:
+                    if peak_ids[N_pix_harf - (i + 1)][j][0] != -1:
+                        continue
+                    else:
+                        current_id = [N_pix_harf - i, j]
+                        assign_id_in_direction(filtered_peaks, current_id, peak_ids[N_pix_harf - i][j], direction)
+            if direction == 'right':
+                if j == N_pix_harf:
+                    continue
+                else:
+                    if peak_ids[N_pix_harf + (i + 1)][j][0] != -1:
+                        continue
+                    else:
+                        current_id = [N_pix_harf + i, j]
+                        assign_id_in_direction(filtered_peaks, current_id, peak_ids[N_pix_harf + i][j], direction)
+
+for i in range(N_pix):
+    for j in range(N_pix):
+        if(peak_ids[i][j][0] == -1):
+            if(N_pix % 2 == 0):
+                if(i < (N_pix / 2) and j < (N_pix / 2)):
+                    continue
+                elif((N_pix / 2) <= i and j < (N_pix / 2)):
+                    peak_ids[i][j] = np.array([-1,1])
+                elif(i < (N_pix / 2) and (N_pix / 2) <= j):
+                    peak_ids[i][j] = np.array([1,-1])
+                elif((N_pix / 2) <= i and (N_pix / 2) <= j):
+                    peak_ids[i][j] = np.array([1,1])
+            else:
+                if(i <= ((N_pix-1) / 2) and j <= ((N_pix-1) / 2)):
+                    print(f'{i},{j} : skiped')
+                    continue
+                elif(((N_pix-1) / 2) < i and j <= ((N_pix-1) / 2)):
+                    # print(f'{i},{j} : edited')
+                    peak_ids[i][j] = np.array([-1,1])
+                elif(i <= ((N_pix-1) / 2) and ((N_pix-1) / 2) < j):
+                    print(f'{i},{j} : edited')
+                    peak_ids[i][j] = np.array([1,-1])
+                elif(((N_pix-1) / 2) < i and ((N_pix-1) / 2) < j):
+                    peak_ids[i][j] = np.array([1,1])
+
 # IDを割り当てたピークを表示
 plt.figure()
 plt.imshow(map_data, cmap='viridis', origin='lower')
@@ -181,7 +236,7 @@ with open(output_file_path, "w") as f:
         for j, pos in enumerate(a):
             if (i == 0 and j == 0):
                 f.write("IDx,IDy,Posix,Posiy,accuracy\n")
-            if (pos[0] == -1):
+            if (pos[0] == -1) or (pos[1] == -1) or (pos[0] == 1):
                 f.write(f'{int(i)},{int(j)},{pos[1]},{pos[0]},miss\n')
                 miss_count += 1
             else:
